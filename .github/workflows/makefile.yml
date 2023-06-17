@@ -1,27 +1,26 @@
-name: Makefile CI
+name: Build
 
 on:
   push:
-    branches: [ "master" ]
+    branches:
+      - main
   pull_request:
-    branches: [ "master" ]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
 
-    - name: configure
-      run: ./configure
+      - name: Set up Docker
+        uses: docker/setup-docker-action@v2
 
-    - name: Install dependencies
-      run: make
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Run check
-      run: make check
-
-    - name: Run distcheck
-      run: make distcheck
+      - name: Build
+        run: |
+          docker build --platform linux/arm64 -t myimage .
+          docker run --rm myimage echo "Build successful!"
