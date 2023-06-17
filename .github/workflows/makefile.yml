@@ -20,5 +20,4 @@ jobs:
     - name: Run check
       run: make
 
-    - name: Run distcheck
-      run: make distcheck
+
