@@ -12,6 +12,7 @@
 #include "types.h"
 #include "sys.h"
 #include "string.h"
+#include <linux/auxvec.h>
 
 struct nolibc_heap {
 	size_t	len;
@@ -109,6 +110,32 @@ char *getenv(const char *name)
 }
 
 static __attribute__((unused))
+unsigned long getauxval(unsigned long type)
+{
+	const unsigned long *auxv = _auxv;
+	unsigned long ret;
+
+	if (!auxv)
+		return 0;
+
+	while (1) {
+		if (!auxv[0] && !auxv[1]) {
+			ret = 0;
+			break;
+		}
+
+		if (auxv[0] == type) {
+			ret = auxv[1];
+			break;
+		}
+
+		auxv += 2;
+	}
+
+	return ret;
+}
+
+static __attribute__((unused))
 void *malloc(size_t len)
 {
 	struct nolibc_heap *heap;
@@ -128,10 +155,9 @@ void *malloc(size_t len)
 static __attribute__((unused))
 void *calloc(size_t size, size_t nmemb)
 {
-	void *orig;
-	size_t res = 0;
+	size_t x = size * nmemb;
 
-	if (__builtin_expect(__builtin_mul_overflow(nmemb, size, &res), 0)) {
+	if (__builtin_expect(size && ((x / size) != nmemb), 0)) {
 		SET_ERRNO(ENOMEM);
 		return NULL;
 	}
@@ -140,7 +166,7 @@ void *calloc(size_t size, size_t nmemb)
 	 * No need to zero the heap, the MAP_ANONYMOUS in malloc()
 	 * already does it.
 	 */
-	return malloc(res);
+	return malloc(x);
 }
 
 static __attribute__((unused))
@@ -419,5 +445,8 @@ char *u64toa(uint64_t in)
 	u64toa_r(in, itoa_buffer);
 	return itoa_buffer;
 }
+
+/* make sure to include all global symbols */
+#include "nolibc.h"
 
 #endif /* _NOLIBC_STDLIB_H */

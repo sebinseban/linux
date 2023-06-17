@@ -69,6 +69,7 @@ struct rv_jit_context {
 	struct bpf_prog *prog;
 	u16 *insns;		/* RV insns */
 	int ninsns;
+	int body_len;
 	int epilogue_offset;
 	int *offset;		/* BPF to RV */
 	int nexentries;
@@ -570,6 +571,11 @@ static inline u32 rv_fence(u8 pred, u8 succ)
 	u16 imm11_0 = pred << 4 | succ;
 
 	return rv_i_insn(imm11_0, 0, 0, 0, 0xf);
+}
+
+static inline u32 rv_nop(void)
+{
+	return rv_i_insn(0, 0, 0, 0, 0x13);
 }
 
 /* RVC instrutions. */

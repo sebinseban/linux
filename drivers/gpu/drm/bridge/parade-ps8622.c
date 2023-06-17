@@ -324,11 +324,7 @@ error:
 static int ps8622_backlight_update(struct backlight_device *bl)
 {
 	struct ps8622_bridge *ps8622 = dev_get_drvdata(&bl->dev);
-	int ret, brightness = bl->props.brightness;
-
-	if (bl->props.power != FB_BLANK_UNBLANK ||
-	    bl->props.state & (BL_CORE_SUSPENDED | BL_CORE_FBBLANK))
-		brightness = 0;
+	int ret, brightness = backlight_get_brightness(bl);
 
 	if (!ps8622->enabled)
 		return -EINVAL;
@@ -446,9 +442,9 @@ static const struct of_device_id ps8622_devices[] = {
 };
 MODULE_DEVICE_TABLE(of, ps8622_devices);
 
-static int ps8622_probe(struct i2c_client *client,
-					const struct i2c_device_id *id)
+static int ps8622_probe(struct i2c_client *client)
 {
+	const struct i2c_device_id *id = i2c_client_get_device_id(client);
 	struct device *dev = &client->dev;
 	struct ps8622_bridge *ps8622;
 	struct drm_bridge *panel_bridge;
@@ -500,7 +496,7 @@ static int ps8622_probe(struct i2c_client *client,
 		ps8622->lane_count = ps8622->max_lane_count;
 	}
 
-	if (!of_find_property(dev->of_node, "use-external-pwm", NULL)) {
+	if (!of_property_read_bool(dev->of_node, "use-external-pwm")) {
 		ps8622->bl = backlight_device_register("ps8622-backlight",
 				dev, ps8622, &ps8622_backlight_ops,
 				NULL);
@@ -524,14 +520,12 @@ static int ps8622_probe(struct i2c_client *client,
 	return 0;
 }
 
-static int ps8622_remove(struct i2c_client *client)
+static void ps8622_remove(struct i2c_client *client)
 {
 	struct ps8622_bridge *ps8622 = i2c_get_clientdata(client);
 
 	backlight_device_unregister(ps8622->bl);
 	drm_bridge_remove(&ps8622->bridge);
-
-	return 0;
 }
 
 static const struct i2c_device_id ps8622_i2c_table[] = {
@@ -544,7 +538,7 @@ MODULE_DEVICE_TABLE(i2c, ps8622_i2c_table);
 
 static struct i2c_driver ps8622_driver = {
 	.id_table	= ps8622_i2c_table,
-	.probe		= ps8622_probe,
+	.probe_new	= ps8622_probe,
 	.remove		= ps8622_remove,
 	.driver		= {
 		.name	= "ps8622",
