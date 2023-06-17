@@ -7,4 +7,4 @@ Description:	Legacy interface for getting/setting sensor information like
 		on Dell Laptops.
 		Since the driver is now using the standard hwmon sysfs interface,
 		the procfs interface is deprecated.
-Users:		https://github.com/vitorafsr/i8kutils
+Users:		https://github.com/vitorafsr/i8kutils s
